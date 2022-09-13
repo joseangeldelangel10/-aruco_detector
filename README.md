@@ -5,5 +5,11 @@ The package contains two files the file called 'aruco_detector.py' only detects 
 aruco markers and draws a blue border over each arUco code that is detected, the second file called
 'aruco_detector position.py' aditionaly saves and processes the data of the arUcos detected, in such
 way that the logic within this file is able to detect all the arUco markers existent on a scene, 
-give the position in meters of the center point of each arUco marker (x,y,z) considering as reference
-axis an axis that has its origin on the center of the camera that is being used, and to   
+give the position in meters of the center point of each arUco marker (x,y,z considering as reference
+axis an axis that has its origin on the center of the camera that is being used), and still detects 
+all existent aruco markers even on varying light conditions and when the code is rotated on roll pitch
+or/and yaw.
+
+For a demo on how the algorithm performs check [this video](https://www.youtube.com/watch?v=FAP81ouRQak) 
+
+
