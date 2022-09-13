@@ -22,8 +22,12 @@ def get_aruco_midpoint(rectangle_corners):
 
 def get_aruco_position(aruco_area, aruco_center):
     k1, k2 = 30000, 0
+    k3, k4 = 1/250, -308
+    k5, k6 = 1/250, -259
     z = k1*(1/aruco_area) + k2
-    print("z val is: {z_val}".format(z_val=z))
+    x = k3*(aruco_center[0] + k4)*z
+    y = k5*(aruco_center[1] + k6)*z
+    return (x, y, z)
 
 def get_aruco_area(rectangle_corners):
     a = np.linalg.norm(rectangle_corners[0,:] - rectangle_corners[1,:])
@@ -49,10 +53,19 @@ def detect_all_arucos_in_scene(scene, scene_with_hidden_arucos, arucoDict, param
             aruco_center = get_aruco_midpoint(rectangle)
             scene = cv.circle(scene, aruco_center, radius=2, color=(0,0,255), thickness=2)
             aruco_area = get_aruco_area(rectangle)
+            aruco_position = get_aruco_position(aruco_area, aruco_center)
+            scene = cv.putText( 
+                scene, 
+                "x:{x:.2f} y:{y:.2f} z:{z:.2f}".format(x=aruco_position[0], y=aruco_position[1], z=aruco_position[2]), 
+                aruco_center, 
+                fontFace = cv.FONT_HERSHEY_SIMPLEX, 
+                fontScale = 0.5, 
+                color=(0,0,255), 
+                thickness = 2 )
             result_dict["aruco_centers"].append( aruco_center )
             result_dict["aruco_corners"].append( rectangle.tolist() )
             result_dict["aruco_areas"].append( aruco_area )  
-            get_aruco_position(aruco_area, aruco_center)
+            result_dict["aruco_positions"].append( aruco_position ) 
         return detect_all_arucos_in_scene(scene, scene_with_hidden_arucos, arucoDict, params, result_dict)
     else:
         result_dict["scene"] = scene
@@ -74,9 +87,29 @@ def aruco_detection():
             print("Can't receive frame (stream end?). Exiting ...")
             break
         
-        aruco_detection_res = detect_all_arucos_in_scene(frame, frame.copy(), arucoDict, arucoParams, {"scene":None, "aruco_centers": [], "aruco_corners": [], "aruco_areas":[]})
+        aruco_detection_res = detect_all_arucos_in_scene(frame, frame.copy(), arucoDict, arucoParams, {"scene":None, "aruco_centers": [], "aruco_corners": [], "aruco_areas":[], "aruco_positions":[] })
         frame = aruco_detection_res["scene"]
-        #print("area is: {area}".format(area=aruco_detection_res["aruco_areas"]))
+        aruco_positions = aruco_detection_res["aruco_positions"]
+        if len(aruco_positions) > 0:
+            aruco_psoitions_sorted = sorted(aruco_positions, key=lambda x:x[2])
+            closest_aruco_position = aruco_psoitions_sorted[0]
+            closest_aruco_index = aruco_positions.index(closest_aruco_position)
+            closest_aruco_second_corner = aruco_detection_res["aruco_corners"][closest_aruco_index][1]
+            closest_aruco_second_corner_cords = (int(closest_aruco_second_corner[0]), int(closest_aruco_second_corner[1]))
+            frame = cv.putText( 
+                    frame, 
+                    "closest",
+                    closest_aruco_second_corner_cords, 
+                    fontFace = cv.FONT_HERSHEY_SIMPLEX, 
+                    fontScale = 0.5, 
+                    color=(255,0,0), 
+                    thickness = 2 )
+            if closest_aruco_position[0] == 0:
+                print("don't move")
+            elif closest_aruco_position[0] > 0:
+                print("izquierda")
+            else:
+                print("derecha")
         cv.imshow('resulting frame', frame)
         
         if cv.waitKey(1) == ord('q'):
